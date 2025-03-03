@@ -6,6 +6,8 @@
 
 This project is an attempt to implement Bulletproof zero-knowledge range proofs with CUDA support. Bulletproofs are a type of non-interactive zero-knowledge proof system that allows one to prove that a committed value lies within a specific range without revealing the value itself. This implementation focuses on proving that a value lies in the range [0, 2^n) for a configurable bit length n.
 
+This project was built based on the paper **"Bulletproofs: Short Proofs for Confidential Transactions and More."** by Benedikt Bünz, Jonathan Bootle, Dan Boneh, Andrew Poelstra, Pieter Wuille, and Gregory Maxwell.
+
 ## Key Features
 
 - Full implementation of Bulletproof range proofs
