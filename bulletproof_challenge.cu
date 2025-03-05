@@ -21,7 +21,7 @@ void generate_challenge(uint8_t* output, const void* data, size_t data_len, cons
 }
 
 // Generate y challenge from V, A, S
-void generate_y_challenge(uint8_t* output, const ge25519* V, const ge25519* A, const ge25519* S) {
+void generate_challenge_y(uint8_t* output, const ge25519* V, const ge25519* A, const ge25519* S) {
     uint8_t challenge_data[196]; // V(64) + A(64) + S(64) + domain(4)
 
     // Copy V
@@ -44,7 +44,7 @@ void generate_y_challenge(uint8_t* output, const ge25519* V, const ge25519* A, c
 }
 
 // Generate z challenge from y challenge
-void generate_z_challenge(uint8_t* output, const uint8_t* y_challenge) {
+void generate_challenge_z(uint8_t* output, const uint8_t* y_challenge) {
     uint8_t challenge_data[36]; // y(32) + domain(4)
 
     // Copy y challenge
@@ -58,7 +58,7 @@ void generate_z_challenge(uint8_t* output, const uint8_t* y_challenge) {
 }
 
 // Generate x challenge from T1, T2
-void generate_x_challenge(uint8_t* output, const ge25519* T1, const ge25519* T2) {
+void generate_challenge_x(uint8_t* output, const ge25519* T1, const ge25519* T2) {
     uint8_t challenge_data[132]; // T1(64) + T2(64) + domain(4)
 
     // Copy T1
@@ -74,4 +74,10 @@ void generate_x_challenge(uint8_t* output, const ge25519* T1, const ge25519* T2)
 
     // Generate challenge
     generate_challenge(output, challenge_data, sizeof(challenge_data), "BulletproofXChal");
+}
+
+// Generate inner product challenge
+void generate_challenge_inner_product(uint8_t* output, const uint8_t* transcript_data, size_t transcript_len) {
+    // Generate challenge with specific domain separation for inner product
+    generate_challenge(output, transcript_data, transcript_len, "BulletproofInnerProduct");
 }

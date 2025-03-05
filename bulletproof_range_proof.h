@@ -76,4 +76,21 @@ bool range_proof_verify(
     const ge25519* h        // Additional base point
 );
 
+void generate_random_scalar(uint8_t* output, size_t len);
+
+// Validate that input is within range
+bool validate_range_input(const fe25519* v, size_t n);
+
+// Generate a range proof
+void generate_range_proof(
+    RangeProof* proof,
+    const fe25519* v,
+    const fe25519* gamma,
+    size_t n,
+    const PointVector* G,
+    const PointVector* H,
+    const ge25519* g,
+    const ge25519* h
+);
+
 #endif // BULLETPROOF_RANGE_PROOF_H

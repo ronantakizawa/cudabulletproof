@@ -370,7 +370,7 @@ void generate_range_proof(
 
     // Generate y challenge
     uint8_t y_bytes[32];
-    generate_y_challenge(y_bytes, &proof->V, &proof->A, &proof->S);
+    generate_challenge_y(y_bytes, &proof->V, &proof->A, &proof->S);
 
     printf("Challenge y hash: ");
     for (int i = 0; i < 8; i++) {
@@ -380,7 +380,7 @@ void generate_range_proof(
 
     // Generate z challenge
     uint8_t z_bytes[32];
-    generate_z_challenge(z_bytes, y_bytes);
+    generate_challenge_z(z_bytes, y_bytes);
 
     printf("Challenge z hash: ");
     for (int i = 0; i < 8; i++) {
@@ -528,7 +528,7 @@ void generate_range_proof(
 
     // Generate x challenge
     uint8_t x_bytes[32];
-    generate_x_challenge(x_bytes, &proof->T1, &proof->T2);
+    generate_challenge_x(x_bytes, &proof->T1, &proof->T2);
 
     printf("Challenge x hash: ");
     for (int i = 0; i < 8; i++) {

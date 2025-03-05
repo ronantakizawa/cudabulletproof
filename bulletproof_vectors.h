@@ -79,7 +79,18 @@ void inner_product_proof_init(InnerProductProof* proof, size_t n);
 // Free memory allocated for an inner product proof
 void inner_product_proof_free(InnerProductProof* proof);
 
-// Generate an inner product proof
+/**
+ * Generate an inner product proof
+ *
+ * @param proof Output parameter to store the generated proof
+ * @param a_in Left vector for inner product
+ * @param b_in Right vector for inner product
+ * @param G Base point vector for left vector commitment
+ * @param H Base point vector for right vector commitment
+ * @param Q Additional base point for cross-term
+ * @param c_in Claimed inner product value
+ * @param transcript_hash Initial transcript state for Fiat-Shamir
+ */
 void inner_product_prove(
     InnerProductProof* proof,
     const FieldVector* a_in,
@@ -91,7 +102,16 @@ void inner_product_prove(
     const uint8_t* transcript_hash
 );
 
-// Verify an inner product proof
+/**
+ * Verify an inner product proof
+ *
+ * @param proof The inner product proof to verify
+ * @param P Point representing the commitment to verify against
+ * @param G Base point vector for left vector commitment
+ * @param H Base point vector for right vector commitment
+ * @param Q Additional base point for cross-term
+ * @return true if the proof is valid, false otherwise
+ */
 bool inner_product_verify(
     const InnerProductProof* proof,
     const ge25519* P,

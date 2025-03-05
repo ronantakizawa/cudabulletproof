@@ -9,6 +9,7 @@
 #include "curve25519_ops.h"
 #include "bulletproof_vectors.h"
 #include "bulletproof_range_proof.h"
+#include "cuda_bulletproof.h"  // Added to include CUDA function declarations
 
 // External helper logging functions (declared in bulletproof_range_proof.cu)
 extern void print_field_element(const char* label, const fe25519* f);
@@ -68,7 +69,7 @@ int main() {
     // Set bit length for the range proof
     int range_bits = 16;
 
-    printf("Creating a complete Bulletproof range proof with %d bits\n", range_bits);
+    printf("Creating a complete Bulletproof range proof with %d bits (CUDA-accelerated)\n", range_bits);
 
     // Create and initialize base points deterministically
     PointVector G, H;
@@ -143,13 +144,40 @@ int main() {
     generate_range_proof(&proof, &value, &blinding, range_bits, &G, &H, &g, &h);
     printf("Proof generation complete.\n");
 
-    // Verify the range proof
-    printf("\n========= STARTING VERIFICATION =========\n");
-    bool verified = range_proof_verify(&proof, &V, range_bits, &G, &H, &g, &h);
-    printf("========= VERIFICATION COMPLETE =========\n");
+    // Verify the range proof using CUDA-accelerated verification
+    printf("\n========= STARTING CUDA VERIFICATION =========\n");
+    // Benchmark the time difference
+    clock_t start_time = clock();
+
+    // Use CUDA-optimized verification
+    bool verified = cuda_range_proof_verify(&proof, &V, range_bits, &G, &H, &g, &h);
+
+    clock_t end_time = clock();
+    double cuda_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    printf("CUDA Verification Time: %.6f seconds\n", cuda_time);
+
+    printf("========= CUDA VERIFICATION COMPLETE =========\n");
+
+    // For comparison, also run CPU verification
+    printf("\n========= STARTING CPU VERIFICATION =========\n");
+    start_time = clock();
+
+    // Use CPU verification
+    bool cpu_verified = range_proof_verify(&proof, &V, range_bits, &G, &H, &g, &h);
+
+    end_time = clock();
+    double cpu_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    printf("CPU Verification Time: %.6f seconds\n", cpu_time);
+    printf("========= CPU VERIFICATION COMPLETE =========\n");
+
+    // Print speedup
+    if (cpu_time > 0) {
+        printf("CUDA Speedup: %.2fx\n", cpu_time / cuda_time);
+    }
 
     // Print result
-    printf("\nVerification result: %s\n", verified ? "SUCCESS" : "FAILED");
+    printf("\nCUDA Verification result: %s\n", verified ? "SUCCESS" : "FAILED");
+    printf("CPU Verification result: %s\n", cpu_verified ? "SUCCESS" : "FAILED");
 
     if (verified) {
         printf("Successfully verified that the value is in range [0, 2^%d).\n", range_bits);
@@ -193,7 +221,7 @@ int main() {
 
     fe25519_frombytes(&large_value, large_value_bytes);
 
-    // Create a new blinding factor - this was missing
+    // Create a new blinding factor
     fe25519 large_blinding;
     uint8_t large_blinding_bytes[32];
     generate_random_scalar(large_blinding_bytes, 32);
@@ -214,11 +242,11 @@ int main() {
     printf("Generating range proof for out-of-range value...\n");
     generate_range_proof(&large_proof, &large_value, &large_blinding, range_bits, &G, &H, &g, &h);
 
-    // Verify (should fail)
-    printf("Verifying range proof for out-of-range value...\n");
-    bool large_verified = range_proof_verify(&large_proof, &large_V, range_bits, &G, &H, &g, &h);
+    // Verify using CUDA (should fail)
+    printf("Verifying range proof for out-of-range value with CUDA...\n");
+    bool large_verified = cuda_range_proof_verify(&large_proof, &large_V, range_bits, &G, &H, &g, &h);
 
-    printf("Verification result for out-of-range value: %s\n", large_verified ? "SUCCESS (INCORRECT!)" : "FAILED (CORRECT)");
+    printf("CUDA Verification result for out-of-range value: %s\n", large_verified ? "SUCCESS (INCORRECT!)" : "FAILED (CORRECT)");
 
     if (!large_verified) {
         printf("Correctly rejected proof for value outside range, as expected.\n");
@@ -226,7 +254,51 @@ int main() {
         printf("Warning: Successfully verified a value outside the range! Implementation issue detected.\n");
     }
 
+    // CUDA-optimized benchmark for field operations
+    printf("\n========= CUDA FIELD OPERATIONS BENCHMARK =========\n");
+    size_t batch_size = 10000;
+
+    // Create test data
+    fe25519* a = (fe25519*)malloc(batch_size * sizeof(fe25519));
+    fe25519* b = (fe25519*)malloc(batch_size * sizeof(fe25519));
+    fe25519* results = (fe25519*)malloc(batch_size * sizeof(fe25519));
+
+    // Initialize with random data
+    for (size_t i = 0; i < batch_size; i++) {
+        uint8_t a_bytes[32], b_bytes[32];
+        generate_random_scalar(a_bytes, 32);
+        generate_random_scalar(b_bytes, 32);
+        fe25519_frombytes(&a[i], a_bytes);
+        fe25519_frombytes(&b[i], b_bytes);
+    }
+
+    // Benchmark CUDA field operations
+    printf("Benchmarking batch field operations with %zu elements...\n", batch_size);
+
+    // Addition
+    start_time = clock();
+    cuda_batch_field_add(results, a, b, batch_size);
+    end_time = clock();
+    printf("CUDA field addition: %.6f seconds\n", ((double)(end_time - start_time)) / CLOCKS_PER_SEC);
+
+    // Multiplication
+    start_time = clock();
+    cuda_batch_field_mul(results, a, b, batch_size);
+    end_time = clock();
+    printf("CUDA field multiplication: %.6f seconds\n", ((double)(end_time - start_time)) / CLOCKS_PER_SEC);
+
+    // Squaring
+    start_time = clock();
+    cuda_batch_field_square(results, a, batch_size);
+    end_time = clock();
+    printf("CUDA field squaring: %.6f seconds\n", ((double)(end_time - start_time)) / CLOCKS_PER_SEC);
+
     // Clean up resources
+    free(a);
+    free(b);
+    free(results);
+
+    // Clean up resources from range proof tests
     point_vector_free(&G);
     point_vector_free(&H);
     range_proof_free(&proof);
